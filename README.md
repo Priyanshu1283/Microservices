@@ -1,89 +1,89 @@
-# Microservices
-E-commerce 
+# 🛒 E-commerce Microservices
 
-🔐 Authentication Service
-Overview
+This repository contains microservices for an e-commerce platform.
 
+---
+
+## 🔐 Authentication Service
+
+### Overview
 Handles user authentication and authorization using JWT, HTTP-only cookies, MongoDB, and Redis.
+---
+### Tech Stack
+- Node.js
+- Express.js
+- MongoDB (Mongoose)
+- JWT (Cookie-based authentication)
+- Redis (Token blacklisting)
 
-Tech Stack
+---
+### Authentication Flow
 
-Node.js, Express
+#### Register / Login
+1. User submits credentials
+2. Password is hashed
+3. JWT is generated
+4. JWT is stored in an HTTP-only cookie
+5. User data is returned
 
-MongoDB (Mongoose)
+#### Request Authentication
+1. Cookie is sent automatically with request
+2. JWT is verified
+3. Redis is checked for blacklisted tokens
+4. `req.userId` is attached to the request
 
-JWT (cookie-based)
+#### Logout
+1. JWT is read from cookie
+2. Token ID (`jti`) is stored in Redis with TTL
+3. Cookie is cleared
+4. Token cannot be reused
 
-Redis (token blacklist)
+---
 
-Auth Flow (Short)
-Register / Login
+### Roles
+| Role   | Description       |
+|--------|-------------------|
+| user   | Normal user       |
+| seller | Extended access   |
 
-User submits credentials
+---
 
-Password is hashed
+### APIs
 
-JWT is generated
+#### Auth APIs
+| Method | Endpoint              | Description          | Access |
+|------- |-----------------------|----------------------|--------|
+| POST   | `/api/auth/register`  | Register user        | Public |
+| POST   | `/api/auth/login`     | Login user           | Public |
+| GET    | `/api/auth/me`        | Get current user     | Auth   |
+| GET    | `/api/auth/logout`    | Logout user          | Public |
 
-JWT stored in HTTP-only cookie
+#### Address Management APIs
+| Method | Endpoint                             | Description       | Access |
+|------- |--------------------------------------|-------------------|--------|
+| GET    | `/api/auth/user/me/address`          | List addresses    | Auth   |
+| POST   | `/api/auth/user/me/address`          | Add address       | Auth   |
+| DELETE | `/api/auth/user/me/address/:id`      | Delete address    | Auth   |
 
-User data returned
+---
 
-Request Authentication
+### Redis Usage
+- Used to blacklist JWTs on logout
+- Prevents token reuse
+- Keys expire automatically based on token TTL
 
-Cookie sent automatically
+---
 
-JWT verified
+### Security
+- Passwords are hashed using bcrypt
+- JWT stored in HTTP-only cookies
+- Redis enforces logout
+- Input validation on all APIs
 
-Redis checked for blacklist
+---
 
-req.userId attached
-
-Logout
-
-JWT read from cookie
-
-Token ID (jti) stored in Redis with TTL
-
-Cookie cleared
-
-Token cannot be reused
-
-Roles
-Role	Description
-user	Normal user
-seller	Extended access
-APIs
-Auth
-Method	Endpoint	Description	Access
-POST	/api/auth/register	Register user	Public
-POST	/api/auth/login	Login user	Public
-GET	/api/auth/me	Get current user	Auth
-GET	/api/auth/logout	Logout user	Public
-Address Management
-Method	Endpoint	Description	Access
-GET	/api/auth/user/me/address	List addresses	Auth
-POST	/api/auth/user/me/address	Add address	Auth
-DELETE	/api/auth/user/me/address/:id	Delete address	Auth
-Redis Usage
-
-Used to blacklist JWTs on logout
-
-Prevents token reuse
-
-Keys expire automatically based on token TTL
-
-Security Notes
-
-Passwords hashed with bcrypt
-
-JWT stored in HTTP-only cookies
-
-Redis enforces logout
-
-Input validation on all APIs
-
-Environment Variables
+### Environment Variables
+```env
 JWT_SECRET=your_secret
 REDIS_HOST=localhost
-REDIS_PORT=6379
+REDIS_PORT=1111
