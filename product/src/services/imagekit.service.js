@@ -22,4 +22,17 @@ async function uploadImage({ buffer, folder = '/products' }) {
     };
 }
 
-module.exports = { imagekit, uploadImage };
+// NEW: delete image by fileId
+async function deleteImage(fileId) {
+    if (!fileId) return;
+
+    try {
+        await imagekit.deleteFile(fileId);
+    } catch (err) {
+        // best-effort deletion (do NOT throw)
+        console.error(`ImageKit delete failed for fileId=${fileId}`, err.message);
+    }
+}
+
+
+module.exports = { imagekit, uploadImage,  deleteImage};

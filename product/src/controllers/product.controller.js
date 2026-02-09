@@ -1,6 +1,6 @@
 
 const productModel = require('../models/product.model');
-const { uploadImage } = require('../services/imagekit.service');
+const { uploadImage, deleteImage } = require('../services/imagekit.service');
 const mongoose = require('mongoose');
 // const { publishToQueue } = require("../broker/borker")
 
@@ -143,6 +143,14 @@ async function deleteProduct(req, res) {
         return res.status(403).json({ message: 'Forbidden: You can only delete your own products' });
     }
 
+     // delete images from  ImageKit before deleting the product
+    if (product.images?.length) {
+        await Promise.all(
+            product.images.map(img => deleteImage(img.id))
+        );
+    }
+
+    // delete the product from DB
     await productModel.findOneAndDelete({ _id: id });
     return res.status(200).json({ message: 'Product deleted successfully' });
 
