@@ -1,5 +1,3 @@
-process.env.NODE_ENV = 'test';
-
 const path = require('path');
 const request = require('supertest');
 const mongoose = require('mongoose');
@@ -7,13 +5,12 @@ const jwt = require('jsonwebtoken');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
 jest.mock('../src/services/imagekit.service', () => ({
-  uploadImage: jest.fn(async () => ({
-    url: 'https://ik.mock/file.jpg',
-    thumbnail: 'https://ik.mock/thumb/file.jpg',
-    id: 'file_mock'
-  }))
+    uploadImage: jest.fn(async ({ filename }) => ({
+        url: `https://ik.mock/${filename}`,
+        thumbnail: `https://ik.mock/thumb/${filename}`,
+        id: `file_${filename}`,
+    })),
 }));
-
 
 const app = require('../src/app');
 
