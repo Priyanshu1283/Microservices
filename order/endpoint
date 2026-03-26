@@ -1,0 +1,65 @@
+## Order Service
+
+Port: `3003`
+
+Base URL: `http://localhost:3003/api/orders`
+
+Auth mechanism:
+- JWT middleware `createAuthMiddleware(["user"])`
+- Reads token from cookie `token` or `Authorization: Bearer <jwt>`
+- If role is not `user`: `403`
+
+### Endpoints
+
+- `POST /api/orders/`
+  - Description: Creates an order from the current user's cart.
+  - Auth/roles: `user`
+  - Body: expects `shippingAddress` object with `street`, `city`, `state`, `pincode`, and `country` (service maps `pincode` → `shippingAddress.zip`).
+  - Works like:
+    - Calls Cart service `GET {CART_SERVICE_URL}/api/cart` (default `http://localhost:3002`) using the same JWT token.
+    - Fetches each product from Product service `GET {PRODUCT_SERVICE_URL}/api/products/:id` (default `http://localhost:3001`) to compute line totals.
+    - Computes `totalPrice.amount` and sets `totalPrice.currency` from the first line (fallback `"INR"`).
+    - Saves order with `status: "PENDING"`.
+  - Notes:
+    - Inventory rule: if product stock is provided and `stock > 0`, it is enforced; if stock is `0` (default), it's treated as "not tracked".
+  - Success: `201` with `{ order }`.
+  - Errors: `400` if cart is empty, `500` on internal errors (including upstream cart issues).
+
+- `GET /api/orders/me`
+  - Description: Returns the current user's orders (paginated).
+  - Auth/roles: `user`
+  - Query params:
+    - `page` (default `1`)
+    - `limit` (default `20`)
+  - Success: `200` with `{ orders, meta: { total, page, limit } }`
+
+- `GET /api/orders/:id`
+  - Description: Returns an order by order id (owner-only).
+  - Auth/roles: `user`
+  - Path params:
+    - `:id` is the **order id** (not user id / not cart id)
+  - Success: `200` with `{ order }`
+  - Errors: `404` if not found, `403` if not the owner
+
+- `POST /api/orders/:id/cancel`
+  - Description: Cancels an order (buyer initiated).
+  - Auth/roles: `user`
+  - Rules:
+    - Only `PENDING` orders can be cancelled
+  - Success: `200` with `{ order }` (status becomes `CANCELLED`)
+  - Errors: `404` not found, `403` not owner, `409` not cancellable
+
+- `PATCH /api/orders/:id/address`
+  - Description: Updates shipping address for an order (before shipment).
+  - Auth/roles: `user`
+  - Body: same `shippingAddress` shape as create order (maps `pincode` → `zip`)
+  - Rules:
+    - Only `PENDING` orders can be updated
+  - Success: `200` with `{ order }`
+  - Errors: `404` not found, `403` not owner, `409` not allowed, `400` invalid address payload
+
+### Environment variables used
+- `JWT_SECRET`: used to verify JWTs
+- `CART_SERVICE_URL`: base URL for Cart service (default `http://localhost:3002`)
+- `PRODUCT_SERVICE_URL`: base URL for Product service (default `http://localhost:3001`)
+

@@ -1,0 +1,49 @@
+## Product Service
+
+Port: `3001`
+
+Base URL: `http://localhost:3001/api/products`
+
+Auth mechanism:
+- JWT middleware `createAuthMiddleware(roles)` reads token from cookie `token` or `Authorization: Bearer <jwt>` and checks that `decoded.role` is included in the required roles list.
+
+### Endpoints
+
+- `POST /api/products/`
+  - Description: Creates a new product with images.
+  - Auth/roles: `admin` or `seller`
+  - Content-Type: `multipart/form-data`
+  - Body fields: `title` (string), `description` (optional string, max 500), `priceAmount` (float > 0), `priceCurrency` (optional `USD`/`INR`), and `images[]` (up to 5 files under field name `images`).
+  - Works like: validates input, uploads images to ImageKit, then creates the product in MongoDB with `seller = req.user.id`.
+  - Success: `201` with `{ message: "Product created", data: product }`.
+
+- `GET /api/products/`
+  - Description: Searches and lists products.
+  - Works like: supports optional query params `q`, `minprice`, `maxprice`, `skip`, and `limit` (limit capped to 20), and returns `{ data: products }`.
+
+- `GET /api/products/:id`
+  - Description: Returns a product by id.
+  - Notes: this route is public (no auth middleware).
+  - Validates: `id` must be a valid ObjectId.
+  - Success: `200` with `{ data: product }`.
+  - Errors: `400` invalid id, `404` not found.
+
+- `PATCH /api/products/:id`
+  - Description: Updates product fields.
+  - Auth/roles: `seller`
+  - Works like: validates ObjectId, loads product, checks ownership, and updates only `title`, `description`, and `price` (where `price` is expected as `{ amount, currency }`).
+  - Success: `200` with `{ message: "Product updated", product }`.
+  - Errors: `400` invalid id, `404` not found, `403` forbidden.
+
+- `DELETE /api/products/:id`
+  - Description: Deletes a product.
+  - Auth/roles: `seller`
+  - Works like: validates id, checks ownership, deletes ImageKit images (if any), then deletes the product.
+  - Success: `200` with `{ message: "Product deleted successfully" }`.
+
+- `GET /api/products/seller`
+  - Description: Lists products for the authenticated seller.
+  - Auth/roles: `seller`
+  - Works like: filters products by seller id (decoded from JWT) and supports `skip`/`limit` pagination (limit capped to 20).
+  - Success: `200` with `{ data: products }`.
+

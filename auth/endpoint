@@ -1,0 +1,51 @@
+## Auth Service
+
+Port: `3000`
+
+Base URL: `http://localhost:3000/api/auth`
+
+Auth mechanism:
+- JWT stored in HttpOnly cookie: `token`
+- `GET /me` and address routes require a valid `token` cookie
+
+### Endpoints
+
+- `POST /api/auth/register`
+  - Description: Registers a new user.
+  - Works like: Validates `username`, `email`, `password`, and `fullname.firstName/fullname.lastName`; hashes password with `bcrypt`; creates user in MongoDB; signs JWT (includes role) and stores it in HttpOnly cookie `token`.
+  - Success: `201` with created user (id, username, email, role, addresses).
+  - Errors: `409` if email/username already exists; `400` validation errors from `express-validator`.
+
+- `POST /api/auth/login`
+  - Description: Logs in an existing user.
+  - Works like: Validates either `email` or `username` plus `password` length; finds user and verifies password with `bcrypt.compare`; signs JWT and stores it in HttpOnly cookie `token`.
+  - Success: `200` with user data (id, username, email, fullname, role, addresses).
+  - Errors: `401` invalid credentials; `400` validation errors.
+
+- `GET /api/auth/me`
+  - Description: Returns the current authenticated user.
+  - Works like: Verifies JWT from cookie `token`, loads user by decoded `id`, and removes password from the response.
+  - Success: `200` with `{ message, user }`.
+  - Errors: `401` invalid/missing token; `404` user not found.
+
+- `GET /api/auth/logout`
+  - Description: Logs out the user (clears cookie and blacklists token briefly).
+  - Works like: Reads cookie `token`, stores a blacklist entry in Redis for ~1 hour, then clears cookie `token`.
+  - Success: `200` with `{ message: "Logout successful" }`.
+
+- `GET /api/auth/users/me/addresses`
+  - Description: Lists addresses for the current user.
+  - Works like: Verifies JWT cookie, fetches user, and returns `addresses`.
+  - Success: `200` with `{ message, addresses }`.
+
+- `POST /api/auth/users/me/addresses`
+  - Description: Adds an address for the current user.
+  - Works like: Validates address fields via `addUserAddressValidations`, checks JWT cookie, sets the new address as default when `isDefault === true` OR when user has no existing addresses, unsets default on existing addresses when needed, then pushes the new address into `addresses`.
+  - Success: `201` with created address.
+
+- `DELETE /api/auth/users/me/addresses/:addressId`
+  - Description: Deletes an address by id.
+  - Works like: Verifies JWT cookie, loads user, finds address by `addressId`, removes it from the array, and saves the user.
+  - Success: `200` with `{ message, addresses }`.
+  - Errors: `404` user not found / address not found.
+

@@ -1,0 +1,36 @@
+## Cart Service
+
+Port: `3002`
+
+Base URL: `http://localhost:3002/api/cart`
+
+Auth mechanism:
+- JWT checked by `createAuthMiddleware(["user"])`
+- Reads token from either cookie `token` or `Authorization: Bearer <jwt>`
+- If role is not `user`: `403`
+
+Cart model (high level):
+- Cart is stored per `user` id
+- `items[]`: `{ productId, quantity }`
+
+### Endpoints
+
+- `GET /api/cart/`
+  - Description: Fetches (or creates) the current user's cart and returns computed totals + checkout lines.
+  - Works like: loads cart for `req.user.id` (creates empty cart if missing), calls Product service to enrich each item via `GET {PRODUCT_SERVICE_URL}/api/products/:id` (default `http://localhost:3001`), and returns `{ cart, totals: {itemCount,totalQuantity}, checkout: { lines[], totalAmount, currency } }`.
+  - Errors: if product details cannot be loaded, responds with `502` and an error message.
+
+- `POST /api/cart/items`
+  - Description: Adds an item to the cart (or increments quantity).
+  - Body: `productId` (string ObjectId) and `qty` (integer > 0) are validated by `express-validator`.
+  - Works like: finds/creates cart for `req.user.id`, increments quantity if the item already exists, otherwise pushes a new item, then saves.
+  - Success: `200` with `{ message: "Item added to cart", cart }`
+  - Errors: `400` for validation failures.
+
+- `PATCH /api/cart/items/:productId`
+  - Description: Updates the quantity for an existing cart item.
+  - Params: `productId` is validated as a Mongo ObjectId string.
+  - Body: `qty` must be an integer > 0.
+  - Works like: loads cart for `req.user.id`, 404 if cart not found or item not found, otherwise sets `quantity = qty`, then saves.
+  - Success: `200` with `{ message: "Item updated", cart }`
+

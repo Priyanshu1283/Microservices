@@ -55,6 +55,20 @@ describe('GET /api/cart', () => {
 
     beforeEach(() => {
         CartModel.__reset();
+        global.fetch = jest.fn().mockImplementation((url) => {
+            const id = String(url).split('/').pop();
+            return Promise.resolve({
+                ok: true,
+                json: async () => ({
+                    data: {
+                        _id: id,
+                        title: 'Test product',
+                        price: { amount: 10, currency: 'INR' },
+                        stock: 100,
+                    },
+                }),
+            });
+        });
     });
 
     test('returns cart with totals', async () => {
@@ -80,6 +94,9 @@ describe('GET /api/cart', () => {
             itemCount: 2,
             totalQuantity: 5
         });
+        expect(res.body.checkout.lines).toHaveLength(2);
+        expect(res.body.checkout.totalAmount).toBe(2 * 10 + 3 * 10);
+        expect(global.fetch).toHaveBeenCalled();
     });
 
 });

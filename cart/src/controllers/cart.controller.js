@@ -1,9 +1,53 @@
 const cartModel = require('../models/cart.model');
 
+const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://localhost:3001';
 
+function lineProductId(item) {
+    const id = item.productId ?? item.product;
+    return id && id.toString ? id.toString() : String(id);
+}
+
+/**
+ * Loads product details from the product service and returns lines the order service can use
+ * without calling the product service again.
+ */
+async function buildCheckoutLines(items) {
+    const lines = await Promise.all(
+        (items || []).map(async (item) => {
+            const productId = lineProductId(item);
+            const res = await fetch(`${PRODUCT_SERVICE_URL}/api/products/${productId}`);
+            if (!res.ok) {
+                throw new Error(`Product ${productId} could not be loaded`);
+            }
+            const body = await res.json();
+            const product = body.data;
+            const lineTotal = product.price.amount * item.quantity;
+            return {
+                productId,
+                quantity: item.quantity,
+                product: {
+                    title: product.title,
+                    price: product.price,
+                    stock: product.stock,
+                },
+                lineTotal,
+            };
+        })
+    );
+
+    let totalAmount = 0;
+    let currency = 'INR';
+    for (const line of lines) {
+        totalAmount += line.lineTotal;
+        if (line.product?.price?.currency) {
+            currency = line.product.price.currency;
+        }
+    }
+
+    return { lines, totalAmount, currency };
+}
 
 async function getCart(req, res) {
-
     const user = req.user;
 
     let cart = await cartModel.findOne({ user: user.id });
@@ -13,14 +57,24 @@ async function getCart(req, res) {
         await cart.save();
     }
 
+    let checkout;
+    try {
+        checkout = await buildCheckoutLines(cart.items);
+    } catch (err) {
+        return res.status(502).json({
+            message: 'Could not load product details for cart',
+            error: err.message,
+        });
+    }
+
     res.status(200).json({
         cart,
         totals: {
             itemCount: cart.items.length,
-            totalQuantity: cart.items.reduce((sum, item) => sum + item.quantity, 0)
-        }
+            totalQuantity: cart.items.reduce((sum, item) => sum + item.quantity, 0),
+        },
+        checkout,
     });
-
 }
 
 
