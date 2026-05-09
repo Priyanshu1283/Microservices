@@ -1,0 +1,57 @@
+## Payment Service
+
+Port: `3004`
+
+Base URL: `http://localhost:3004/api/payments`
+
+Auth mechanism:
+- JWT middleware `createAuthMiddleware(["user"])`
+- Reads token from cookie `token` or `Authorization: Bearer <jwt>`
+- If role is not `user`: `403`
+
+### Endpoints
+
+- `POST /api/payments/create/:orderId`
+  - Description: Creates a Razorpay order for an existing order-service order.
+  - Auth/roles: `user`
+  - Path params:
+    - `:orderId` is the **Order Service order id**.
+  - Works like:
+    - Reads user token from cookie/header.
+    - Calls Order service: `GET http://localhost:3003/api/orders/:orderId`.
+    - Takes `order.totalPrice` from Order service response.
+    - Creates a Razorpay order using that amount/currency.
+    - Stores payment record in MongoDB as `PENDING` with:
+      - `order` (order id),
+      - `razorpayOrderId`,
+      - `user`,
+      - `price.amount` / `price.currency`.
+  - Success: `201` with `{ message, payment }`.
+  - Errors: `500` on upstream/order/razorpay/db failures.
+
+- `POST /api/payments/verify`
+  - Description: Verifies Razorpay payment signature and marks payment as completed.
+  - Auth/roles: `user`
+  - Body:
+    - `razorpayOrderId`
+    - `paymentId`
+    - `signature`
+  - Works like:
+    - Validates Razorpay signature using key secret.
+    - Finds local payment by `razorpayOrderId` with status `PENDING`.
+    - Sets:
+      - `paymentId`,
+      - `signature`,
+      - `status = COMPLETED`.
+  - Success: `200` with `{ message, payment }`.
+  - Errors:
+    - `400` invalid signature
+    - `404` pending payment not found
+    - `500` internal errors
+
+### Environment variables used
+- `MONGO_URI`: Mongo connection string
+- `JWT_SECRET`: JWT verification key
+- `RAZORPAY_KEY_ID`: Razorpay key id
+- `RAZORPAY_KEY_SECRET`: Razorpay key secret
+
