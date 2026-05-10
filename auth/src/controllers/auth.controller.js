@@ -6,7 +6,7 @@ const redis = require("../db/redis");
 
 async function registerUser(req, res) {
   try {
-    const { username, email, password, fullname:{ firstName, lastName }, role } = req.body;
+    const { username, email, password, fullname: { firstName, lastName }, role } = req.body;
 
     const isUserAlreadyExists = await userModel.findOne({
       $or: [{ email }, { username }],
@@ -131,113 +131,113 @@ async function getCurrentUser(req, res) {
 }
 
 async function logoutUser(req, res) {
-    const token = req.cookies.token;
-    if (token) {
-        // Optionally, you can blacklist the token in Redis here
-        await redis.set(`blacklist_${token}`, 'true', 'EX', 60 * 60); // Blacklist for 1 hour
-    }
+  const token = req.cookies.token;
+  if (token) {
+    // Optionally, you can blacklist the token in Redis here
+    await redis.set(`blacklist_${token}`, 'true', 'EX', 60 * 60); // Blacklist for 1 hour
+  }
 
-    res.clearCookie("token");
-    return res.status(200).json({ message: "Logout successful" });
+  res.clearCookie("token");
+  return res.status(200).json({ message: "Logout successful" });
 }
 
 async function getUserAddresses(req, res) {
-    const id = req.userId;
-    const user = await userModel.findById(id).select('addresses');
+  const id = req.userId;
+  const user = await userModel.findById(id).select('addresses');
 
-    if (!user) {
-        return res.status(404).json({ message: "User not found" });
-    }
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
 
-    return res.status(200).json({
-        message: "User addresses fetched successfully",
-        addresses: user.addresses
-    });
+  return res.status(200).json({
+    message: "User addresses fetched successfully",
+    addresses: user.addresses
+  });
 }
 
 async function addUserAddress(req, res) {
-    const id = req.userId;
-    const { street, city, state, pincode, country, phone, isDefault } = req.body;
+  const id = req.userId;
+  const { street, city, state, pincode, country, phone, isDefault } = req.body;
 
-    // Step 1: fetch minimal user data to decide default
-    const user = await userModel.findById(id).select('addresses');
-    if (!user) {
-        return res.status(404).json({ message: "User not found" });
-    }
+  // Step 1: fetch minimal user data to decide default
+  const user = await userModel.findById(id).select('addresses');
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
 
-    // Step 2: decide default logically
-    const makeDefault = isDefault === true || user.addresses.length === 0;
+  // Step 2: decide default logically
+  const makeDefault = isDefault === true || user.addresses.length === 0;
 
-    // Step 3: if new address should be default → unset existing defaults
-    if (makeDefault) {
-        await userModel.updateOne(
-            { _id: id },
-            { $set: { "addresses.$[].isDefault": false } }
-        );
-    }
-
-    // Step 4: push the new address
-    const updatedUser = await userModel.findOneAndUpdate(
-        { _id: id },
-        {
-            $push: {
-                addresses: {
-                    street,
-                    city,
-                    state,
-                    pincode,
-                    country,
-                    phone,
-                    isDefault: makeDefault
-                }
-            }
-        },
-        { new: true }
+  // Step 3: if new address should be default → unset existing defaults
+  if (makeDefault) {
+    await userModel.updateOne(
+      { _id: id },
+      { $set: { "addresses.$[].isDefault": false } }
     );
+  }
 
-    return res.status(201).json({
-        message: "Address added successfully",
-        address: updatedUser.addresses[updatedUser.addresses.length - 1]
-    });
+  // Step 4: push the new address
+  const updatedUser = await userModel.findOneAndUpdate(
+    { _id: id },
+    {
+      $push: {
+        addresses: {
+          street,
+          city,
+          state,
+          pincode,
+          country,
+          phone,
+          isDefault: makeDefault
+        }
+      }
+    },
+    { new: true }
+  );
+
+  return res.status(201).json({
+    message: "Address added successfully",
+    address: updatedUser.addresses[updatedUser.addresses.length - 1]
+  });
 }
 
 async function deleteUserAddress(req, res) {
-    const id = req.userId;
-    const { addressId } = req.params;
+  const id = req.userId;
+  const { addressId } = req.params;
 
-    // 1️⃣ Find user first
-    const user = await userModel.findById(id);
-    if (!user) {
-        return res.status(404).json({ message: "User not found" });
-    }
+  // 1️⃣ Find user first
+  const user = await userModel.findById(id);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
 
-    // 2️⃣ Check if address exists
-    const addressIndex = user.addresses.findIndex(
-        addr => addr._id.toString() === addressId
-    );
+  // 2️⃣ Check if address exists
+  const addressIndex = user.addresses.findIndex(
+    addr => addr._id.toString() === addressId
+  );
 
-    if (addressIndex === -1) {
-        return res.status(404).json({ message: "Address not found" });
-    }
+  if (addressIndex === -1) {
+    return res.status(404).json({ message: "Address not found" });
+  }
 
-    // 3️⃣ Remove address
-    user.addresses.splice(addressIndex, 1);
+  // 3️⃣ Remove address
+  user.addresses.splice(addressIndex, 1);
 
-    await user.save();
+  await user.save();
 
-    return res.status(200).json({
-        message: "Address deleted successfully",
-        addresses: user.addresses
-    });
+  return res.status(200).json({
+    message: "Address deleted successfully",
+    addresses: user.addresses
+  });
 }
 
 
 module.exports = {
-    registerUser,
-    loginUser,
-    getCurrentUser,
-    logoutUser,
-    getUserAddresses,
-    addUserAddress,
-    deleteUserAddress
+  registerUser,
+  loginUser,
+  getCurrentUser,
+  logoutUser,
+  getUserAddresses,
+  addUserAddress,
+  deleteUserAddress
 };

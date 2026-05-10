@@ -121,6 +121,13 @@ async function createOrder(req, res) {
             paymentSummary: {},
         });
 
+        // Clear cart after order creation
+        try {
+            await axios.delete(`${cartBaseUrl}/api/cart`, { headers });
+        } catch (cartErr) {
+            console.error("Failed to clear cart:", cartErr.message);
+        }
+
         return res.status(201).json({ order });
     } catch (err) {
         return res.status(500).json({ message: "Internal server error", error: err.message });
@@ -139,6 +146,7 @@ async function getMyOrders(req, res) {
             orderModel.countDocuments({ user: user.id }),
         ]);
 
+        console.log(`📦 Fetching orders for user: ${user.id}. Found: ${orders.length} orders.`);
         return res.status(200).json({
             orders,
             meta: {
@@ -243,10 +251,28 @@ async function updateOrderAddress(req, res) {
     }
 }
 
+async function updateOrder(req, res) {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+
+        const order = await orderModel.findByIdAndUpdate(id, updates, { new: true });
+
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        res.status(200).json({ order });
+    } catch (err) {
+        res.status(500).json({ message: "Internal server error", error: err.message });
+    }
+}
+
 module.exports = {
     createOrder,
     getMyOrders,
     getOrderById,
     cancelOrderById,
     updateOrderAddress,
+    updateOrder
 };

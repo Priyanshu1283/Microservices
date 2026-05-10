@@ -124,8 +124,15 @@ async function updateItemQuantity(req, res) {
     res.status(200).json({ message: 'Item updated', cart });
 }
 
+async function clearCart(req, res) {
+    const user = req.user;
+    await cartModel.findOneAndUpdate({ user: user.id }, { items: [] });
+    res.status(200).json({ message: 'Cart cleared' });
+}
+
 module.exports = {
     addItemToCart,
     updateItemQuantity,
-    getCart
+    getCart,
+    clearCart
 };

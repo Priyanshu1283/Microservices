@@ -30,4 +30,9 @@ router.patch(
 );
 
 
+router.delete('/',
+    createAuthMiddleware([ 'user' ]),
+    cartController.clearCart
+);
+
 module.exports = router;

@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #2874f0; /* Flipkart Blue */
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #0f172a;
+  --color-accent: #fb641b; /* Flipkart Orange */
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #ff6161;
+  --color-destructive-foreground: #ffffff;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #878787;
+  --color-card: #ffffff;
+  --color-card-foreground: #212121;
+  --color-border: #e0e0e0;
+  --color-input: #f0f0f0;
+  --color-ring: #2874f0;
+  --color-background: #f1f3f6;
+  --color-foreground: #212121;
+
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+}
+
+@layer base {
+  :root {
+    --background: #f1f3f6;
+    --foreground: #212121;
+    --card: #ffffff;
+    --card-foreground: #212121;
+    --popover: #ffffff;
+    --popover-foreground: #212121;
+    --primary: #2874f0;
+    --primary-foreground: #ffffff;
+    --secondary: #ffffff;
+    --secondary-foreground: #212121;
+    --muted: #f1f3f6;
+    --muted-foreground: #878787;
+    --accent: #fb641b;
+    --accent-foreground: #ffffff;
+    --destructive: #ff6161;
+    --destructive-foreground: #ffffff;
+    --border: #e0e0e0;
+    --input: #f0f0f0;
+    --ring: #2874f0;
+    --radius: 0.25rem;
+  }
+
+  .dark {
+    --background: #121212;
+    --foreground: #e0e0e0;
+    --card: #1e1e1e;
+    --card-foreground: #e0e0e0;
+    --popover: #1e1e1e;
+    --popover-foreground: #e0e0e0;
+    --primary: #2874f0;
+    --primary-foreground: #ffffff;
+    --secondary: #2d2d2d;
+    --secondary-foreground: #e0e0e0;
+    --muted: #2d2d2d;
+    --muted-foreground: #a0a0a0;
+    --accent: #fb641b;
+    --accent-foreground: #ffffff;
+    --destructive: #ff6161;
+    --destructive-foreground: #ffffff;
+    --border: #333333;
+    --input: #2d2d2d;
+    --ring: #2874f0;
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-feature-settings: "rlig" 1, "calt" 1;
+    transition-property: background-color, border-color, color;
+    transition-duration: 300ms;
+  }
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass {
+  background: rgba(30, 30, 30, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Flipkart-style transitions */
+.page-transition {
+  transition: opacity 0.2s ease-in-out;
+}
+

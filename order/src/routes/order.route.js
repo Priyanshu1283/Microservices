@@ -19,6 +19,12 @@ router.post(
 );
 
 router.patch(
+    "/:id",
+    createAuthMiddleware(["user", "admin"]),
+    orderController.updateOrder
+);
+
+router.patch(
     "/:id/address",
     createAuthMiddleware(["user"]),
     orderController.updateOrderAddress
