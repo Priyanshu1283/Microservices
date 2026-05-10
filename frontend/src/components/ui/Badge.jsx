@@ -14,6 +14,7 @@ export function Badge({ className, variant = 'default', ...props }) {
     outline: 'text-foreground border border-input hover:bg-accent hover:text-accent-foreground',
     success: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
     warning: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    rating: 'bg-[#388e3c] text-white border-transparent px-1 py-0.5 rounded-[3px] text-[12px]',
   }
 
   return (

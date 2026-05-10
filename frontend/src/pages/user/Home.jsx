@@ -1,100 +1,135 @@
-import { Link } from "react-router-dom"
-import { motion } from "framer-motion"
-import { ArrowRight, ShieldCheck, Zap, Star } from "lucide-react"
-import { Button } from "../../components/ui/Button"
-import { PageTransition } from "../../components/animations/PageTransition"
+import React from 'react'
+import { useQuery } from '@tanstack/react-query'
+import api from '../../services/api'
+import { Card } from '../../components/ui/Card'
+import { Button } from '../../components/ui/Button'
+import { Badge } from '../../components/ui/Badge'
+import { Link } from 'react-router-dom'
+import { 
+  ShoppingBag, 
+  Star, 
+  Smartphone, 
+  Shirt, 
+  Watch, 
+  Laptop, 
+  Home as HomeIcon, 
+  Gamepad2, 
+  Utensils, 
+  Car, 
+  Armchair,
+  ChevronRight
+} from 'lucide-react'
 
-const features = [
-  {
-    icon: <Zap className="h-6 w-6 text-yellow-500" />,
-    title: "Lightning Fast Delivery",
-    description: "Get your digital products instantly after secure payment confirmation."
-  },
-  {
-    icon: <ShieldCheck className="h-6 w-6 text-green-500" />,
-    title: "Secure Payments",
-    description: "Your transactions are protected by industry-leading encryption and fraud prevention."
-  },
-  {
-    icon: <Star className="h-6 w-6 text-purple-500" />,
-    title: "Premium Quality",
-    description: "All products are verified by our team to ensure the highest quality standards."
-  }
+const categories = [
+  { name: 'For You', icon: ShoppingBag },
+  { name: 'Fashion', icon: Shirt },
+  { name: 'Mobiles', icon: Smartphone },
+  { name: 'Beauty', icon: Watch },
+  { name: 'Electronics', icon: Laptop },
+  { name: 'Home', icon: HomeIcon },
+  { name: 'Appliances', icon: Gamepad2 },
+  { name: 'Toys', icon: Gamepad2 },
+  { name: 'Food', icon: Utensils },
+  { name: 'Auto', icon: Car },
+  { name: 'Furniture', icon: Armchair },
 ]
 
 export function Home() {
-  return (
-    <PageTransition>
-      {/* Hero Section */}
-      <section className="relative py-20 md:py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent dark:from-primary/10 pointer-events-none" />
-        <div className="container mx-auto px-4 relative z-10 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 dark:from-white dark:to-white/60">
-              The Premium Digital <br className="hidden md:block" /> Marketplace
-            </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-10">
-              Discover high-quality software, courses, and digital assets crafted by top creators worldwide.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/products">
-                <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-full">
-                  Explore Products
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link to="/register">
-                <Button variant="outline" size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-full">
-                  Become a Seller
-                </Button>
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+  const { data, isLoading } = useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const response = await api.get('/products')
+      return response.data
+    }
+  })
 
-      {/* Features Section */}
-      <section className="py-20 bg-secondary/50 dark:bg-secondary/20 rounded-3xl my-10">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.2 }}
-                className="bg-card p-8 rounded-2xl shadow-sm border border-border/50 hover:shadow-md transition-shadow"
-              >
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.description}</p>
-              </motion.div>
+  const products = data?.data || []
+
+  return (
+    <div className="space-y-4 -mt-8 -mx-4 sm:-mx-0">
+      {/* Category Bar */}
+      <div className="bg-white border-b border-gray-200 shadow-sm overflow-x-auto no-scrollbar scroll-smooth">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between min-w-max gap-8 md:gap-4">
+          {categories.map((cat) => (
+            <Link 
+              key={cat.name} 
+              to={`/products?category=${encodeURIComponent(cat.name === 'For You' ? 'All' : cat.name)}`}
+              className="flex flex-col items-center gap-1 group min-w-[70px]"
+            >
+              <div className="p-2 transition-colors">
+                <cat.icon className="h-6 w-6 text-gray-700 group-hover:text-primary" />
+              </div>
+              <span className="text-[12px] font-semibold text-gray-700 group-hover:text-primary whitespace-nowrap">{cat.name}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-2">
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="h-80 bg-gray-100 animate-pulse rounded-lg"></div>
             ))}
           </div>
-        </div>
-      </section>
+        ) : (
+          <div className="bg-white p-4 shadow-sm rounded-sm">
+            <div className="flex items-center justify-between mb-6 border-b pb-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Recommended for You</h2>
+                <p className="text-sm text-gray-500">Based on your interests</p>
+              </div>
+              <Button variant="ghost" className="text-primary font-bold hover:bg-primary/5">
+                VIEW ALL <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
 
-      {/* Trending CTA */}
-      <section className="py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to elevate your workflow?</h2>
-          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join thousands of professionals who trust StoreFront for their digital needs.
-          </p>
-          <Link to="/products">
-            <Button size="lg" variant="secondary" className="rounded-full">
-              View Trending Products
-            </Button>
-          </Link>
-        </div>
-      </section>
-    </PageTransition>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {products.map((product) => (
+                <Link to={`/products/${product._id}`} key={product._id} className="group border rounded-sm hover:shadow-lg transition-all duration-300">
+                  <div className="h-full bg-white p-4 flex flex-col gap-3">
+                    <div className="aspect-[4/5] overflow-hidden flex items-center justify-center p-2 relative bg-[#f9f9f9] rounded-sm">
+                      <img 
+                        src={product.images[0]?.url || product.images[0]} 
+                        alt={product.title}
+                        className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                    
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex flex-col">
+                        <h3 className="font-bold text-sm text-gray-900 leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+                          {product.title}
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-1">{product.description}</p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Badge variant="rating" className="flex items-center gap-1">
+                          {product.rating || 4.5} <Star className="h-2.5 w-2.5 fill-white" />
+                        </Badge>
+                        <span className="text-[11px] text-gray-400 font-medium">({(product.numReviews || 0).toLocaleString()})</span>
+                      </div>
+
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base font-bold text-gray-900">₹{(product.price.amount).toLocaleString()}</span>
+                          {product.originalPrice && (
+                            <span className="text-xs text-gray-400 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                          )}
+                        </div>
+                        <p className="text-[11px] font-bold text-[#388e3c]">
+                          Bank Offer Applied
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

@@ -31,6 +31,9 @@ async function createPayment(req, res) {
             receipt: `receipt_${orderId}`
         };
 
+        console.log("Creating Razorpay Order with options:", razorpayOrderOptions);
+        console.log("Using Razorpay Key ID:", process.env.RAZORPAY_KEY_ID);
+
         const order = await razorpay.orders.create(razorpayOrderOptions);
         const payment = await paymentModel.create({
             order: orderId,

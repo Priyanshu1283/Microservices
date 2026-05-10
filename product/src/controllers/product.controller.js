@@ -41,13 +41,20 @@ async function createProduct(req, res) {
 
 async function getProducts(req, res) {
 
-    const { q, minprice, maxprice, skip = 0, limit = 20 } = req.query;
-
+    const { q, category, minprice, maxprice, rating, skip = 0, limit = 20 } = req.query;
 
     const filter = {}
 
     if (q) {
         filter.$text = { $search: q }
+    }
+
+    if (category && category !== 'All') {
+        filter.category = category;
+    }
+
+    if (rating) {
+        filter.rating = { $gte: Number(rating) };
     }
 
     if (minprice) {

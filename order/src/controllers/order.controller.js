@@ -67,27 +67,36 @@ async function createOrder(req, res) {
             return res.status(400).json({ message: "Cart is empty" });
         }
 
-        const products = await Promise.all(
+        const productsResults = await Promise.all(
             cartItems.map(async (item) => {
                 const productId = item.productId || item.product;
-                const response = await axios.get(`${productBaseUrl}/api/products/${productId}`, {
-                    headers,
-                });
-                return response.data.data;
+                try {
+                    const response = await axios.get(`${productBaseUrl}/api/products/${productId}`, {
+                        headers,
+                    });
+                    return response.data.data;
+                } catch (err) {
+                    console.error(`Product ${productId} not found during order creation`);
+                    return null;
+                }
             })
         );
 
+        const products = productsResults.filter(p => p !== null);
+
+        if (!products.length) {
+            return res.status(400).json({ message: "No valid products found in cart" });
+        }
+
         let priceAmount = 0;
-        const orderItems = cartItems.map((item) => {
+        const orderItems = [];
+
+        for (const item of cartItems) {
             const productId = String(item.productId || item.product);
             const product = products.find((p) => String(p._id) === productId);
 
-            if (!product) {
-                throw new Error(`Product ${productId} not found`);
-            }
+            if (!product) continue;
 
-            // Some products may be created without explicitly setting `stock` (default is 0).
-            // In that case we treat stock=0 as "not tracked" and only enforce when stock > 0.
             const stock = product.stock;
             if (typeof stock === "number" && stock > 0 && stock < item.quantity) {
                 throw new Error(
@@ -98,15 +107,15 @@ async function createOrder(req, res) {
             const itemTotal = product.price.amount * item.quantity;
             priceAmount += itemTotal;
 
-            return {
+            orderItems.push({
                 product: productId,
                 quantity: item.quantity,
                 price: {
                     amount: itemTotal,
                     currency: product.price.currency,
                 },
-            };
-        });
+            });
+        }
 
         const order = await orderModel.create({
             user: user.id,

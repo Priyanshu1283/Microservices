@@ -33,6 +33,10 @@ export function Checkout() {
     onSuccess: async (data) => {
       const orderId = data.order._id
       handlePayment(orderId)
+    },
+    onError: (err) => {
+      console.error("Order creation failed:", err)
+      alert(err.response?.data?.message || "Failed to create order. Please check your cart.")
     }
   })
 
@@ -79,8 +83,9 @@ export function Checkout() {
           }
         },
         prefill: {
-          name: addressesData?.user?.fullname?.firstName + " " + addressesData?.user?.fullname?.lastName,
-          email: addressesData?.user?.email
+          name: (addressesData?.user?.fullname?.firstName || "") + " " + (addressesData?.user?.fullname?.lastName || "User"),
+          email: addressesData?.user?.email || "user@example.com",
+          contact: selectedAddress?.phone || "9999999999"
         },
         theme: {
           color: "#2874f0"

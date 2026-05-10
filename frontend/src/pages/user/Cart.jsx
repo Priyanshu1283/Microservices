@@ -21,15 +21,23 @@ export function Cart() {
       queryClient.invalidateQueries(['cart'])
     }
   })
-
-  // We'll treat deleting as updating quantity to 0 for this example, 
-  // or add a removeItem to the service if it exists.
-  // Assuming PATCH with qty=0 removes it, or we need a DELETE endpoint.
-  // The cart endpoint documentation said PATCH /api/cart/items/:productId.
+  
+  const removeItemMutation = useMutation({
+    mutationFn: (productId) => cartService.removeItem(productId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['cart'])
+    }
+  })
 
   const handleUpdateQuantity = (productId, newQty) => {
     if (newQty < 1) return
     updateItemMutation.mutate({ productId, qty: newQty })
+  }
+  
+  const handleDeleteItem = (productId) => {
+    if (window.confirm("Remove this item from cart?")) {
+      removeItemMutation.mutate(productId)
+    }
   }
 
   const { cart, totals, checkout } = cartData || {}
@@ -115,7 +123,13 @@ export function Cart() {
                   </div>
                   
                   {/* Assuming we need a delete button, we can set quantity to 0 if the backend supports it, or use a specific delete endpoint */}
-                  <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => handleDeleteItem(line.productId)}
+                    disabled={removeItemMutation.isPending}
+                  >
                     <Trash2 className="h-5 w-5" />
                   </Button>
                 </div>

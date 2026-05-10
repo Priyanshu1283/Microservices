@@ -32,6 +32,21 @@ const productSchema = new mongoose.Schema({
             id: String
         }
     ],
+    category: {
+        type: String,
+        default: 'General'
+    },
+    originalPrice: {
+        type: Number
+    },
+    rating: {
+        type: Number,
+        default: 4.5
+    },
+    numReviews: {
+        type: Number,
+        default: 0
+    },
     stock: {
         type: Number,
         default: 0
