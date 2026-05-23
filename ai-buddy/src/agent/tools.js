@@ -4,14 +4,48 @@ const axios = require("axios");
   
 
 
-const searchProducts = tool(async (data)=> {
+const searchProduct = tool(async ({query, token})=> {
+
+    const response = await axios.get(`http://localhost:3001/api/products?q=${data.query}` , {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    return json.stringify(response.data);
 
 
- 
-},
-name="search-products",
-description="Search for products based on a query",
-inputSchema = z.object({
-    query: z.string().describe("The search query for products")
+},{
+  name: "searchProduct",
+  description: "Search for a product based on a query",
+  inputSchema: z.object({
+    query: z.string().describe("The search query for a product")
+  })
+});
+
+const addProductToCart = tool(async ({productId, qty=1, token})=> {
+    
+    const response = await axios.post(`http://localhost:3002/api/cart/items` ,{
+        productId,
+        qty
+    }, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    })
+        return `Added product with id ${productId} and quantity ${qty} to the cart.`;
+
+}, {
+    name: "addProductToCart",
+    description: "Add a product to the user's shopping cart",
+    inputSchema: z.object({
+        productId: z.string().describe("The ID of the product to add to the cart"),
+        qty: z.number().describe("The quantity of the product to add to the cart").default(1)
+    })
 })
-)
+
+
+module.exports = {
+    searchProduct,
+    addProductToCart    
+}

@@ -1,6 +1,7 @@
 const {Server} = require('socket.io');
 const jwt = require('jsonwebtoken');
 const cookie = require('cookie');
+const agent = require("../agent/agent");
 
 
 async function initScoketServer(httpServer) {
@@ -16,6 +17,8 @@ async function initScoketServer(httpServer) {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         socket.user = decoded;
+        socket.token = token;
+
         next();
     } catch(err){
         next(new Error('Authentication error: Invalid token'));
@@ -26,7 +29,13 @@ async function initScoketServer(httpServer) {
 
 
     io.on('connection', (socket) => {
+        console.log(socket.user, socket.token);
+
         console.log('A user connected');
+
+        socket.on('message', (data) => {
+            console.log('Received message:', data);
+        })
     });
 }
 
