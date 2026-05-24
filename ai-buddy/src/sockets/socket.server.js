@@ -1,6 +1,7 @@
 const {Server} = require('socket.io');
 const jwt = require('jsonwebtoken');
 const cookie = require('cookie');
+const {HumanMessage} = require("@langchain/core/messages");
 const agent = require("../agent/agent");
 
 
@@ -33,8 +34,23 @@ async function initScoketServer(httpServer) {
 
         console.log('A user connected');
 
-        socket.on('message', (data) => {
+        socket.on('message', async (data) => {
             console.log('Received message:', data);
+            const agentResponse = await agent.invoke(
+                {
+                    messages: [
+                        new HumanMessage(data)
+                    ]
+                },{
+                    metadata: {
+                        token: socket.token
+                    }
+                }
+            )
+            console.log('Agent response:', agentResponse);
+
+            const lastMessage = agentResponse.messages[agentResponse.messages.length - 1];
+            socket.emit('message', lastMessage.content);
         })
     });
 }

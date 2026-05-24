@@ -6,19 +6,21 @@ const axios = require("axios");
 
 const searchProduct = tool(async ({query, token})=> {
 
-    const response = await axios.get(`http://localhost:3001/api/products?q=${data.query}` , {
+    console.log("Searching for products with query:", {query , token});
+
+    const response = await axios.get(`http://localhost:3001/api/products?q=${query}` , {
         headers: {
             Authorization: `Bearer ${token}`
         }
     });
 
-    return json.stringify(response.data);
+    return JSON.stringify(response.data);
 
 
 },{
   name: "searchProduct",
   description: "Search for a product based on a query",
-  inputSchema: z.object({
+  schema: z.object({
     query: z.string().describe("The search query for a product")
   })
 });
@@ -38,7 +40,7 @@ const addProductToCart = tool(async ({productId, qty=1, token})=> {
 }, {
     name: "addProductToCart",
     description: "Add a product to the user's shopping cart",
-    inputSchema: z.object({
+    schema: z.object({
         productId: z.string().describe("The ID of the product to add to the cart"),
         qty: z.number().describe("The quantity of the product to add to the cart").default(1)
     })

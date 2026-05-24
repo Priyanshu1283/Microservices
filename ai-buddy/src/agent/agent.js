@@ -6,7 +6,7 @@ const tools = require("./tools");
 
 
 const model = new ChatGoogleGenerativeAI({
-   model: "gemini-2.0-flash",
+   model: "gemini-3.5-flash",
     temperature: 0.5,
 })
 
@@ -23,16 +23,20 @@ const graph = new StateGraph(MessagesAnnotation)
             throw new Error(`Tool ${call.name} not found`);
         }
         const toolInput = call.args
-        const toolResult = await tool.invoke({...toolInput, token: config.metadata.token })
+
+        console.log("Invoking tool:", call.name, "with input:", call);
+
+        const toolResult = await tool.func({...toolInput, token: config.metadata.token })
 
         return new ToolMessage({
             content: toolResult,
-            toolName: call.name
+            name: call.name
         })
-
-        state.messages.push(toolCallResult);
-        return state;
     }))
+    
+    // Add all tool results to state.messages
+    state.messages.push(...toolCallResults);
+    return state;
 })
 .addNode("chat", async (state, config) => {
     const response = await model.invoke(state.messages, {tools: [tools.searchProduct, tools.addProductToCart]});
@@ -49,7 +53,7 @@ const graph = new StateGraph(MessagesAnnotation)
     if(lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
         return ["tools"];
     }else{
-        return "_end_";
+        return "__end__";
     }
 })
 .addEdge("tools", "chat");
