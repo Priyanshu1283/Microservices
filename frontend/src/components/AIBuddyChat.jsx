@@ -1,24 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Send, 
-  X, 
-  Trash2, 
-  Minimize2, 
-  MessageSquare, 
-  Sparkles, 
-  ShoppingCart, 
-  Search, 
-  Lock, 
-  ArrowRight,
-  ChevronDown,
-  Info
-} from 'lucide-react';
-import { Button } from './ui/Button';
+import { Send, Trash2, Minimize2, Sparkles, Lock, ChevronDown, Info } from 'lucide-react';
 
 export function AIBuddyChat() {
   const { isAuthenticated, user } = useAuthStore();
@@ -26,13 +12,7 @@ export function AIBuddyChat() {
   const navigate = useNavigate();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      sender: 'bot',
-      text: "Ahoy! I'm your AI Buddy. 🚢 Ready to help you navigate our store! I can search for products, add items to your cart, check your orders, and more. How can I assist you today?",
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -41,6 +21,32 @@ export function AIBuddyChat() {
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const socketRef = useRef(null);
+
+  // Set dynamic welcome message based on login state
+  useEffect(() => {
+    if (isAuthenticated) {
+      setTimeout(() => {
+        setMessages([
+          {
+            sender: 'bot',
+            text: `Welcome back, Captain ${user?.name || ''}! 🚢 I am fully connected and ready to navigate our store. I can search products, add items to your cart, and track orders for you. How can I help you today?`,
+            timestamp: new Date()
+          }
+        ]);
+      }, 0);
+    } else {
+      setTimeout(() => {
+        setMessages([
+          {
+            sender: 'bot',
+            text: "Ahoy! I'm your AI Buddy. 🚢 Since you are browsing as a guest, please feel free to ask me questions. To use my advanced features like **searching products** and **adding items to your cart**, please log in first!",
+            timestamp: new Date()
+          }
+        ]);
+      }, 0);
+    }
+  }, [isAuthenticated, user]);
 
   // Auto-scroll to bottom of messages
   const scrollToBottom = () => {
@@ -53,23 +59,24 @@ export function AIBuddyChat() {
     }
   }, [messages, isOpen, isTyping]);
 
-  // Handle Socket.io connection
+  // Handle Socket.io connection (only when authenticated)
   useEffect(() => {
     if (!isAuthenticated) {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+        setTimeout(() => setSocket(null), 0);
       }
-      setIsConnected(false);
+      setTimeout(() => setIsConnected(false), 0);
       return;
     }
 
     // Connect to same-origin socket via the Vite proxy (/socket.io)
     const newSocket = io({
       withCredentials: true,
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000
+      transports: ['polling', 'websocket'], // Polling first to avoid raw websocket connection errors in console
+      reconnectionAttempts: 3,
+      reconnectionDelay: 3000
     });
 
     newSocket.on('connect', () => {
@@ -119,36 +126,47 @@ export function AIBuddyChat() {
       }
     });
 
-    setSocket(newSocket);
+    setTimeout(() => {
+      setSocket(newSocket);
+      socketRef.current = newSocket;
+    }, 0);
 
     return () => {
       newSocket.disconnect();
+      if (socketRef.current === newSocket) {
+        socketRef.current = null;
+        setTimeout(() => setSocket(null), 0);
+      }
     };
   }, [isAuthenticated, queryClient]);
+
+  // Local Guest Mode Response Generator
+  const getGuestAIResponse = (userInput) => {
+    const input = userInput.toLowerCase();
+    
+    if (input.includes('search') || input.includes('find') || input.includes('product') || input.includes('item') || input.includes('show')) {
+      return "I can certainly search our catalog for you! 🔍 However, searching and displaying live items require secure database access. Please **log in** to your account so I can find products and show them directly inside our chat!";
+    }
+    
+    if (input.includes('cart') || input.includes('add') || input.includes('buy') || input.includes('purchase')) {
+      return "I would love to help you add items to your cart! 🛒 To let me manage your shopping cart, please **log in** to your account. I can then add any product for you instantly!";
+    }
+    
+    if (input.includes('order') || input.includes('track') || input.includes('status') || input.includes('history')) {
+      return "I can track your purchases and show your delivery status! 📦 Please **log in** so I can access your secure order history and help you track your packages.";
+    }
+    
+    if (input.includes('hello') || input.includes('hi') || input.includes('hey') || input.includes('yo')) {
+      return "Hello! I am your AI Buddy, the captain of this storefront. 🚢 Since you're currently browsing as a guest, please **log in** so I can assist you with advanced actions like **searching products**, **adding items to your cart**, and **tracking orders**!";
+    }
+    
+    return "I am here to help you navigate this store! 🚢 To unlock my advanced capabilities—like **searching our catalog**, **adding items to your cart**, or **checking your order status**—please **log in** to your account. What would you like to do first?";
+  };
 
   // Send message handler
   const handleSendMessage = (e) => {
     if (e) e.preventDefault();
     if (!inputText.trim()) return;
-
-    // Check if socket is connected
-    if (!socket || !isConnected) {
-      setMessages(prev => [
-        ...prev,
-        {
-          sender: 'user',
-          text: inputText,
-          timestamp: new Date()
-        },
-        {
-          sender: 'bot',
-          text: "⚠️ Opps! I'm currently disconnected from my control deck. Please make sure you are logged in and try reloading the page.",
-          timestamp: new Date()
-        }
-      ]);
-      setInputText('');
-      return;
-    }
 
     const textToSend = inputText;
     setInputText('');
@@ -166,7 +184,37 @@ export function AIBuddyChat() {
     // Show bot typing animation
     setIsTyping(true);
 
-    // Send to Socket.io
+    if (!isAuthenticated) {
+      // Guest Mode: Simulate AI response locally after 800ms
+      setTimeout(() => {
+        setIsTyping(false);
+        const responseText = getGuestAIResponse(textToSend);
+        setMessages(prev => [
+          ...prev,
+          {
+            sender: 'bot',
+            text: responseText,
+            timestamp: new Date()
+          }
+        ]);
+      }, 800);
+      return;
+    }
+
+    // Authenticated Mode: Send to Socket.io
+    if (!socket || !isConnected) {
+      setIsTyping(false);
+      setMessages(prev => [
+        ...prev,
+        {
+          sender: 'bot',
+          text: "⚠️ Oops! I'm currently disconnected from my control deck. Please verify if the backend service is running and try reloading.",
+          timestamp: new Date()
+        }
+      ]);
+      return;
+    }
+
     socket.emit('message', textToSend);
   };
 
@@ -175,17 +223,18 @@ export function AIBuddyChat() {
     setMessages([
       {
         sender: 'bot',
-        text: `Chat cleared! I'm ready for a fresh start, Captain ${user?.name || ''}! 🌊 How can I help you navigate the store?`,
+        text: isAuthenticated 
+          ? `Chat cleared! I'm ready for a fresh start, Captain ${user?.name || ''}! 🌊 How can I help you navigate the store?`
+          : `Chat cleared! I'm ready for a fresh start! 🌊 Please remember that you are browsing as a guest. Log in to unlock my full capabilities!`,
         timestamp: new Date()
       }
     ]);
   };
 
+  // Click quick action suggestion
   const handleQuickAction = (actionText) => {
     setInputText(actionText);
-    // Autofocus and submit can be done, but let the user review or send immediately:
     setTimeout(() => {
-      // Simulate sending
       setMessages(prev => [
         ...prev,
         {
@@ -195,9 +244,28 @@ export function AIBuddyChat() {
         }
       ]);
       setIsTyping(true);
-      socket?.emit('message', actionText);
+      
+      if (!isAuthenticated) {
+        // Guest mode response simulated
+        setTimeout(() => {
+          setIsTyping(false);
+          const responseText = getGuestAIResponse(actionText);
+          setMessages(prev => [
+            ...prev,
+            {
+              sender: 'bot',
+              text: responseText,
+              timestamp: new Date()
+            }
+          ]);
+        }, 800);
+      } else {
+        socket?.emit('message', actionText);
+      }
     }, 100);
   };
+
+  // Formatting utility for AI text (converts simple markdown bold **text** and lists)
   const formatMessageText = (text) => {
     if (!text) return '';
     
@@ -232,7 +300,7 @@ export function AIBuddyChat() {
         .replace(/>/g, '&gt;');
 
       // Replace bold `**text**`
-      formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-gray-950 dark:text-white">$1</strong>');
+      formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-gray-955 dark:text-white">$1</strong>');
       
       // Replace inline code `` `code` ``
       formattedText = formattedText.replace(/`(.*?)`/g, '<code class="bg-gray-100 dark:bg-zinc-900 px-1 py-0.5 rounded text-xs font-mono border border-gray-200 dark:border-zinc-700 font-semibold text-primary dark:text-primary-foreground">$1</code>');
@@ -242,7 +310,7 @@ export function AIBuddyChat() {
       let insideList = false;
       const parsedLines = [];
 
-      lines.forEach((line, lineIdx) => {
+      lines.forEach((line) => {
         const trimmedLine = line.trim();
         if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
           if (!insideList) {
@@ -306,20 +374,18 @@ export function AIBuddyChat() {
                     <Sparkles className="h-3.5 w-3.5 text-[#ffe11b]" />
                   </h3>
                   <p className="text-[10.5px] text-white/90 font-medium">
-                    {isAuthenticated ? (isConnected ? 'Online • Shop Navigator' : 'Connecting...') : 'Offline'}
+                    {isAuthenticated ? (isConnected ? 'Online • Shop Navigator' : 'Connecting...') : 'Online • Guest Assistant'}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
-                {isAuthenticated && (
-                  <button 
-                    onClick={handleClearChat}
-                    title="Clear history"
-                    className="p-1.5 hover:bg-white/15 rounded-lg text-white/90 hover:text-white transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
+                <button 
+                  onClick={handleClearChat}
+                  title="Clear history"
+                  className="p-1.5 hover:bg-white/15 rounded-lg text-white/90 hover:text-white transition-colors cursor-pointer"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
                 <button 
                   onClick={() => setIsOpen(false)}
                   className="p-1.5 hover:bg-white/15 rounded-lg text-white/90 hover:text-white transition-colors cursor-pointer"
@@ -334,82 +400,57 @@ export function AIBuddyChat() {
               ref={chatContainerRef}
               className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/70 dark:bg-zinc-950"
             >
-              {!isAuthenticated ? (
-                /* RENDER UNAUTHENTICATED LOG IN CARD */
-                <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-5">
-                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-                    <Lock className="h-8 w-8" />
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-base text-gray-900 dark:text-gray-50">AIBuddy is Locked</h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 max-w-[240px] mx-auto leading-relaxed">
-                      Please log in to chat with AI Buddy so he can access your customized shopping cart and orders.
-                    </p>
-                  </div>
-                  <Button 
-                    onClick={() => {
-                      setIsOpen(false);
-                      navigate('/login');
-                    }}
-                    className="w-full bg-primary hover:bg-primary/95 text-white py-2 text-xs flex items-center justify-center gap-2 rounded-xl transition-all shadow-md active:scale-98 cursor-pointer"
-                  >
-                    Go to Login
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                /* RENDER ACTIVE CONVERSATION */
-                <>
-                  {messages.map((msg, idx) => {
-                    const isBot = msg.sender === 'bot';
-                    return (
-                      <div 
-                        key={idx}
-                        className={`flex ${isBot ? 'justify-start' : 'justify-end'} animate-in fade-in slide-in-from-bottom-2 duration-200`}
-                      >
-                        <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs shadow-md leading-relaxed border ${
-                          isBot 
-                            ? 'bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 border-gray-100 dark:border-zinc-700/60 rounded-tl-sm' 
-                            : 'bg-primary text-white border-transparent rounded-tr-sm'
-                        }`}>
-                          {/* Rich Text Format */}
-                          <div className="space-y-1 text-gray-800 dark:text-gray-100">
-                            {formatMessageText(msg.text)}
-                          </div>
-                          
-                          {/* Timestamp */}
-                          <div className={`text-[9px] mt-1.5 text-right ${
-                            isBot ? 'text-gray-400 dark:text-gray-500' : 'text-white/70'
-                          }`}>
-                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </div>
+              {/* RENDER CONVERSATION THREAD */}
+              <>
+                {messages.map((msg, idx) => {
+                  const isBot = msg.sender === 'bot';
+                  return (
+                    <div 
+                      key={idx}
+                      className={`flex ${isBot ? 'justify-start' : 'justify-end'} animate-in fade-in slide-in-from-bottom-2 duration-200`}
+                    >
+                      <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs shadow-md leading-relaxed border ${
+                        isBot 
+                          ? 'bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 border-gray-100 dark:border-zinc-700/60 rounded-tl-sm' 
+                          : 'bg-primary text-white border-transparent rounded-tr-sm'
+                      }`}>
+                        {/* Rich Text Format */}
+                        <div className="space-y-1 text-gray-800 dark:text-gray-100">
+                          {formatMessageText(msg.text)}
                         </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* TYPING LOADER */}
-                  {isTyping && (
-                    <div className="flex justify-start animate-in fade-in duration-200">
-                      <div className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700/60 rounded-2xl rounded-tl-sm px-4 py-3 shadow-md flex items-center gap-2">
-                        <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Buddy is thinking</span>
-                        <div className="flex gap-1">
-                          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+                        
+                        {/* Timestamp */}
+                        <div className={`text-[9px] mt-1.5 text-right ${
+                          isBot ? 'text-gray-400 dark:text-gray-500' : 'text-white/70'
+                        }`}>
+                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
                     </div>
-                  )}
+                  );
+                })}
 
-                  {/* REF FOR SCROLL */}
-                  <div ref={messagesEndRef} />
-                </>
-              )}
+                {/* TYPING LOADER */}
+                {isTyping && (
+                  <div className="flex justify-start animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700/60 rounded-2xl rounded-tl-sm px-4 py-3 shadow-md flex items-center gap-2">
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Buddy is thinking</span>
+                      <div className="flex gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* REF FOR SCROLL */}
+                <div ref={messagesEndRef} />
+              </>
             </div>
 
-            {/* QUICK ACTIONS SUGGESTIONS (ONLY WHEN LOGGED IN) */}
-            {isAuthenticated && isConnected && messages.length <= 2 && (
+            {/* QUICK ACTIONS SUGGESTIONS */}
+            {messages.length <= 2 && (
               <div className="px-4 py-2.5 bg-slate-100 dark:bg-zinc-900 border-t border-border flex flex-wrap gap-1.5 max-h-24 overflow-y-auto shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <button 
                   onClick={() => handleQuickAction('Search for shoes')}
@@ -432,30 +473,48 @@ export function AIBuddyChat() {
               </div>
             )}
 
-            {/* CONNECTIONS STATUS MESSAGE BOX */}
+            {/* CONNECTIONS STATUS MESSAGE BOX (ONLY WHEN LOGGED IN AND DISCONNECTED) */}
             {isAuthenticated && connectionError && (
               <div className="px-4 py-1.5 bg-red-50 dark:bg-red-950/30 border-t border-red-100 dark:border-red-900/40 text-[10px] text-red-500 flex items-center gap-1.5 shrink-0">
                 <Info className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">Error: {connectionError}. Please re-login.</span>
+                <span className="truncate">Error: {connectionError}. Please check connection.</span>
               </div>
             )}
 
-            {/* INPUT PANEL (ONLY ENABLED WHEN LOGGED IN) */}
+            {/* Guest mode Log-in Prompt Banner */}
+            {!isAuthenticated && (
+              <div className="px-4 py-2 bg-amber-50/70 dark:bg-amber-950/20 border-t border-amber-100 dark:border-amber-900/30 text-[10px] text-amber-700 dark:text-amber-300 flex items-center justify-between gap-1.5 shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center gap-1.5 truncate">
+                  <Lock className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate font-medium">Log in to add products to your cart and search live products!</span>
+                </div>
+                <button 
+                  onClick={() => {
+                    setIsOpen(false);
+                    navigate('/login');
+                  }}
+                  className="text-xs font-bold text-primary dark:text-primary-foreground underline shrink-0 hover:text-accent cursor-pointer ml-1"
+                >
+                  Login
+                </button>
+              </div>
+            )}
+
+            {/* INPUT PANEL (ALWAYS ENABLED) */}
             <form 
               onSubmit={handleSendMessage}
               className="p-3 border-t border-border bg-white dark:bg-zinc-800 flex items-center gap-2 shrink-0"
             >
               <input
                 type="text"
-                disabled={!isAuthenticated}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder={isAuthenticated ? "Ask AI Buddy to do something..." : "Please login to chat"}
-                className="flex-1 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-700 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-primary dark:focus:border-primary transition-colors disabled:opacity-50 text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 font-medium"
+                placeholder={isAuthenticated ? "Ask AI Buddy to do something..." : "Chat as guest or ask a question..."}
+                className="flex-1 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-700 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-primary dark:focus:border-primary transition-colors text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 font-medium"
               />
               <button
                 type="submit"
-                disabled={!isAuthenticated || !inputText.trim() || isTyping}
+                disabled={!inputText.trim() || isTyping}
                 className="h-8.5 w-8.5 rounded-xl bg-primary text-white flex items-center justify-center hover:bg-primary/95 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:scale-100 cursor-pointer"
               >
                 <Send className="h-4 w-4" />
