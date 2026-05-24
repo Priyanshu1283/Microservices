@@ -29,6 +29,11 @@ export default defineConfig({
       '/api/payments': {
         target: 'http://localhost:3004',
         changeOrigin: true,
+      },
+      '/socket.io': {
+        target: 'http://localhost:3005',
+        ws: true,
+        changeOrigin: true,
       }
     }
   }

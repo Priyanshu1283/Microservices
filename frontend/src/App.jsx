@@ -2,6 +2,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { AppRouter } from './routes/AppRouter'
 import { useEffect } from 'react'
 import { useThemeStore } from './store/themeStore'
+import { AIBuddyChat } from './components/AIBuddyChat'
 
 function App() {
   const { theme } = useThemeStore()
@@ -20,6 +21,7 @@ function App() {
   return (
     <BrowserRouter>
       <AppRouter />
+      <AIBuddyChat />
     </BrowserRouter>
   )
 }
