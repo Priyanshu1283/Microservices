@@ -1,0 +1,35 @@
+{
+  
+  "name": "ecommerce-root",
+  "version": "1.0.0",
+  "description": "This repository contains microservices for an e-commerce platform.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start-auth": "npm run dev --prefix auth",
+    "start-product": "npm run dev --prefix product",
+    "start-cart": "npm run dev --prefix cart",
+    "start-order": "npm run dev --prefix order",
+    "start-payment": "npm run dev --prefix payment",
+    "start-ai-buddy": "npm run dev --prefix ai-buddy",
+    "start-frontend": "npm run dev --prefix frontend",
+
+    "dev": "concurrently --kill-others -n \"AUTH,PRODUCT,CART,ORDER,PAYMENT,AI_BUDDY,FRONTEND\" -c \"blue,green,yellow,magenta,cyan,red,white\" \"npm run start-auth\" \"npm run start-product\" \"npm run start-cart\" \"npm run start-order\" \"npm run start-payment\" \"npm run start-ai-buddy\" \"npm run start-frontend\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Priyanshu1283/Microservices.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Priyanshu1283/Microservices/issues"
+  },
+  "homepage": "https://github.com/Priyanshu1283/Microservices#readme",
+  "dependencies": {
+    "concurrently": "^9.2.1"
+  }
+  
+}

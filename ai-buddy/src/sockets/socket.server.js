@@ -6,7 +6,13 @@ const agent = require("../agent/agent");
 
 
 async function initScoketServer(httpServer) {
-  const io = new Server(httpServer, {}); 
+  const io = new Server(httpServer, {
+    cors: {
+      origin: 'http://localhost:5173',
+      methods: ['GET', 'POST'],
+      credentials: true,
+    },
+  }); 
  
   io.use((socket, next) => {
     const cookies = socket.handshake.headers?.cookie;

@@ -30,7 +30,7 @@ export function AIBuddyChat() {
         setMessages([
           {
             sender: 'bot',
-            text: `Welcome back, Captain ${user?.name || ''}! 🚢 I am fully connected and ready to navigate our store. I can search products, add items to your cart, and track orders for you. How can I help you today?`,
+            text: `Welcome back, Captain, I am fully connected and ready to navigate our store. I can search products, add items to your cart, and track orders for you. How can I help you today?`,
             timestamp: new Date()
           }
         ]);
@@ -71,12 +71,12 @@ export function AIBuddyChat() {
       return;
     }
 
-    // Connect to same-origin socket via the Vite proxy (/socket.io)
-    const newSocket = io({
+    // Connect directly to the AI Buddy backend socket at port 3005
+    const newSocket = io('http://localhost:3005', {
       withCredentials: true,
       transports: ['polling', 'websocket'], // Polling first to avoid raw websocket connection errors in console
       reconnectionAttempts: 3,
-      reconnectionDelay: 3000
+      reconnectionDelay: 3000,
     });
 
     newSocket.on('connect', () => {
@@ -160,7 +160,7 @@ export function AIBuddyChat() {
       return "Hello! I am your AI Buddy, the captain of this storefront. 🚢 Since you're currently browsing as a guest, please **log in** so I can assist you with advanced actions like **searching products**, **adding items to your cart**, and **tracking orders**!";
     }
     
-    return "I am here to help you navigate this store! 🚢 To unlock my advanced capabilities—like **searching our catalog**, **adding items to your cart**, or **checking your order status**—please **log in** to your account. What would you like to do first?";
+    return "I am here to help you navigate this store! To unlock my advanced capabilities—like **searching our catalog**, **adding items to your cart**, or **checking your order status**—please **log in** to your account. What would you like to do first?";
   };
 
   // Send message handler
@@ -224,7 +224,7 @@ export function AIBuddyChat() {
       {
         sender: 'bot',
         text: isAuthenticated 
-          ? `Chat cleared! I'm ready for a fresh start, Captain ${user?.name || ''}! 🌊 How can I help you navigate the store?`
+          ? `Chat cleared! I'm ready for a fresh start, Captain 🌊 How can I help you navigate the store?`
           : `Chat cleared! I'm ready for a fresh start! 🌊 Please remember that you are browsing as a guest. Log in to unlock my full capabilities!`,
         timestamp: new Date()
       }
