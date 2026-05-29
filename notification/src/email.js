@@ -38,6 +38,3 @@ const sendEmail = async (to, subject, text, html) => {
     console.error('Error sending email:', error);
   }
 };
-
-sendEmail("adraj097@gmail.com", 'TEST EMAIL', '', '<p>Lauru Lalit<b>test email</b> ki re nunu ki ki hall chauuuu.</p>');
-module.exports = sendEmail;
