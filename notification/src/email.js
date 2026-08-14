@@ -25,11 +25,11 @@ transporter.verify((error, success) => {
 const sendEmail = async (to, subject, text, html) => {
   try {
     const info = await transporter.sendMail({
-      from: `"Your Name" <${process.env.EMAIL_USER}>`, // sender address
-      to, // list of receivers
-      subject, // Subject line
-      text, // plain text body
-      html, // html body
+      from: `"Your Name" <${process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      text,
+      html,
     });
 
     console.log('Message sent: %s', info.messageId);
@@ -37,4 +37,11 @@ const sendEmail = async (to, subject, text, html) => {
   } catch (error) {
     console.error('Error sending email:', error);
   }
+};
+
+
+sendEmail('roypranshu1283@gmail.com', 'Test Email', 'This is a test email sent from Node.js using Nodemailer.', '<p>This is a test email sent from <b>Node.js</b> using Nodemailer.</p>');
+
+module.exports = {
+  sendEmail,
 };
