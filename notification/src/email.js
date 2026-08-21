@@ -1,4 +1,4 @@
-require('dotenv').config();
+
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
     clientId: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
     refreshToken: process.env.REFRESH_TOKEN,
-  },  
+  },
 });
 
 // Verify the connection configuration
@@ -20,7 +20,7 @@ transporter.verify((error, success) => {
     console.log('Email server is ready to send messages');
   }
 });
-    
+
 // Function to send email
 const sendEmail = async (to, subject, text, html) => {
   try {
@@ -39,9 +39,15 @@ const sendEmail = async (to, subject, text, html) => {
   }
 };
 
+// testing the nodemailer [not for the production]
 
-sendEmail('roypranshu1283@gmail.com', 'Test Email', 'This is a test email sent from Node.js using Nodemailer.', '<p>This is a test email sent from <b>Node.js</b> using Nodemailer.</p>');
-
+if (require.main === module) {
+  sendEmail('roypranshu1283@gmail.com',
+    'Test Email',
+    'This is a test email sent from Node.js using Nodemailer.',
+    '<p>This is a test email sent from <b>Node.js</b> using Nodemailer.</p>'
+  );
+}
 module.exports = {
   sendEmail,
 };
