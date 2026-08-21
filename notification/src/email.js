@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
     clientId: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
     refreshToken: process.env.REFRESH_TOKEN,
-  },
+  },  
 });
 
 // Verify the connection configuration
@@ -20,7 +20,7 @@ transporter.verify((error, success) => {
     console.log('Email server is ready to send messages');
   }
 });
-
+    
 // Function to send email
 const sendEmail = async (to, subject, text, html) => {
   try {
