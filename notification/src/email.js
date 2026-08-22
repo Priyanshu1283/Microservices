@@ -1,4 +1,4 @@
-
+require('dotenv').config();
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
@@ -12,20 +12,20 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Verify the connection configuration
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('Error connecting to email server:', error);
-  } else {
-    console.log('Email server is ready to send messages');
+async function verifyEmailConnection() {
+  try {
+    await transporter.verify();
+    console.log("Email server is ready to send messages");
+  } catch (error) {
+    console.error("Email server connection failed:", error.message);
+    throw error;
   }
-});
+}
 
-// Function to send email
-const sendEmail = async (to, subject, text, html) => {
+const sendEmail = async ({ to, subject, text, html }) => {
   try {
     const info = await transporter.sendMail({
-      from: `"Your Name" <${process.env.EMAIL_USER}>`,
+      from: `"E-Commerce Platform" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       text,
@@ -33,21 +33,14 @@ const sendEmail = async (to, subject, text, html) => {
     });
 
     console.log('Message sent: %s', info.messageId);
-    console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
+    return info;
   } catch (error) {
     console.error('Error sending email:', error);
+    throw error;
   }
 };
 
-// testing the nodemailer [not for the production]
-
-if (require.main === module) {
-  sendEmail('roypranshu1283@gmail.com',
-    'Test Email',
-    'This is a test email sent from Node.js using Nodemailer.',
-    '<p>This is a test email sent from <b>Node.js</b> using Nodemailer.</p>'
-  );
-}
 module.exports = {
   sendEmail,
+  verifyEmailConnection,
 };

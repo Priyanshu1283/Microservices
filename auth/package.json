@@ -20,6 +20,7 @@
     "testEnvironment": "node"
   },
   "dependencies": {
+    "amqplib": "^2.0.1",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cookies-parser": "^1.2.0",

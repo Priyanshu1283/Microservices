@@ -1,56 +1,122 @@
-const amqplib = require('amqplib')
+const amqplib = require("amqplib");
+const { sendWelcomeEmail } = require("../services/notification.service");
 
-let channel, connection
+let channel;
+let connection;
 
 async function connect() {
 
-    if (connection) return connection;
+    if (connection && channel) {
+        return;
+    }
 
     try {
+
         connection = await amqplib.connect(process.env.RABBIT_URL);
-        console.log('Connected to RabbitMQ');
+
+        console.log("Connected to RabbitMQ");
+
         channel = await connection.createChannel();
-        // await channel.assertQueue('emailQueue', {durable: true});
-        // return connection;
-    } catch (err) {
-        console.log('Failed to connect to RabbitMQ', err);
+
+        channel.on("error", (error) => {
+            console.error(
+                "RabbitMQ channel error:",
+                error.message
+            );
+        });
+
+        connection.on("error", (error) => {
+            console.error(
+                "RabbitMQ connection error:",
+                error.message
+            );
+        });
+
+        connection.on("close", () => {
+            console.log("RabbitMQ connection closed");
+
+            connection = null;
+            channel = null;
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Failed to connect to RabbitMQ:",
+            error.message
+        );
+
+        throw error;
     }
 }
 
-async function publicToQueue(queueName, data = {}) {
-    if (!channel || !connection) await connect();
 
-    // assertQueue() -> Ensure queue exists
-    // durable: true -> ensures that the queue will survive a server restart
+async function publishToQueue(queueName, data = {}) {
+
+    if (!channel || !connection) {
+        await connect();
+    }
+
     await channel.assertQueue(queueName, {
         durable: true
-    })
-    //Rabbit Amqp data ko buffer ke form me transfer kerta hai...
-    // Buffer.from() -> converts the JSON data into a buffer (raw binary data) before sending it to the queue
-    channel.sendToQueue(queueName, Buffer.from(JSON.stringify(data)));
-    console.log('message send to queue', queueName, data);
+    });
+
+    channel.sendToQueue(
+        queueName,
+        Buffer.from(JSON.stringify(data)),
+        {
+            persistent: true
+        }
+    );
 }
+
 
 async function subscribeToQueue(queueName, callback) {
-    if (!channel || !connection) await connect();
+
+    if (!channel || !connection) {
+        await connect();
+    }
 
     await channel.assertQueue(queueName, {
         durable: true
-    })
+    });
 
-    channel.consume(queueName, async (msg) => {
-        if (msg !== null) {
-            const data = JSON.parse(msg.content.toString());
+    await channel.consume(queueName, async (msg) => {
+
+        if (!msg) return;
+
+        try {
+
+            const data = JSON.parse(
+                msg.content.toString()
+            );
+
+            console.log(
+                `Received message from ${queueName}`
+            );
+
+            // Process notification
             await callback(data);
+
+            // ACK only after successful processing
             channel.ack(msg);
+
+        } catch (error) {
+
+            console.error(
+                "Error processing message:",
+                error.message
+            );
+
+            // Retry message
+            channel.nack(msg, false, true);
         }
-    })
+    });
 }
+
 
 module.exports = {
     connect,
-    channel,
-    connection,
-    publicToQueue,
-    subscribeToQueue
-}
+    publishToQueue,
+    subscribeToQueue,
+};
