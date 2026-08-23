@@ -1,16 +1,5 @@
 const express = require("express");
-const {
-    connect,
-    subscribeToQueue
-} = require("./broker/broker");
-
-const {
-    sendWelcomeEmail
-} = require("./services/notification.service");
-
-const {
-    verifyEmailConnection
-} = require("./email");
+require("./broker/listner");
 
 const app = express();
 
@@ -21,32 +10,5 @@ app.get("/", (req, res) => {
         message: "Notification Service is up and running"
     });
 });
-
-async function startNotificationService() {
-    try {
-
-        await connect();
-
-        await verifyEmailConnection();
-
-        await subscribeToQueue(
-            "AUTH_NOTIFICATION_USER_CREATED",
-            sendWelcomeEmail
-        );
-
-        console.log("Notification consumer started");
-
-    } catch (error) {
-
-        console.error(
-            "Notification service startup failed:",
-            error.message
-        );
-
-        process.exit(1);
-    }
-}
-
-startNotificationService();
 
 module.exports = app;

@@ -1,5 +1,4 @@
 const amqplib = require("amqplib");
-const { sendWelcomeEmail } = require("../services/notification.service");
 
 let channel;
 let connection;
